@@ -1,3 +1,4 @@
+from typing import Optional
 import os
 import pickle
 import re
@@ -76,7 +77,7 @@ class Query:
         self.fields.append(text)
 
     @property
-    def string(self):
+    def string(self) -> str:
         return '&'.join(self.fields)
 
 
@@ -84,56 +85,87 @@ class Constraint:
     """Represents a bounding box of a value
     """
 
-    def __init__(self, lowerbound=0, upperbound=None):
+    def __init__(
+        self,
+        lowerbound: Optional[int] = None,
+        upperbound: Optional[int] = None
+    ):
         """Creates a new Constraint object
 
         Args:
-            lowerbound (int, optional): Constraint lowerbound. Defaults to 0.
-            upperbound (int, optional): Constraint upperbound. Defaults to None.
+            lowerbound: Constraint lowerbound. Defaults to None.
+            upperbound: Constraint upperbound. Defaults to None.
         """
         
         self._lb = lowerbound
         self._ub = upperbound
 
-    @property
-    def string(self):
-        """Returns the string representation of this constraint
+    @staticmethod
+    def to_string(
+        lowerbound: Optional[int] = None,
+        upperbound: Optional[int] = None
+    ) -> str:
+        """Returns the string representation of a constraint
+
+        Args:
+            lowerbound: Constraint lowerbound. Defaults to None.
+            upperbound: Constraint upperbound. Defaults to None.
 
         Returns:
-            str: string representation
+            string representation of constraint
         """
 
-        if self._lb == 0:
-            return f"<{self._ub}"
-        elif self._ub is None:
-            return f">{self._lb}"
-        elif self._ub == self._lb:
-            return str(self._lb)
-        else:
-            return f"{self._lb}-{self._ub}"
+        if lowerbound == upperbound:
+            if lowerbound is None:
+                # If both bounds are None
+                # Return an empty string
+                return ""
+            else:
+                # If both bounds are the same and not None
+                # Return the string for the exact value
+                return str(lowerbound)
 
-    def __str__(self):
+        elif lowerbound is None:
+            # If only the lowerbound is None
+            # Return the string for everything less than the upperbound
+            return f"<{upperbound}"
+
+        elif upperbound is None:
+            # If only the upperbound is None
+            # Return the string for everything greater than the lowerbound
+            return f">{lowerbound}"
+
+        else:
+            # If both bounds are not None and are not equal
+            # Return the string for everything in the bounds (inclusive)
+            return f"{lowerbound}-{upperbound}"
+        
+    @property
+    def string(self) -> str:
+        return Constraint.to_string(self._lb, self._ub)
+
+    def __str__(self) -> str:
         return self.string
     
-def word_count(text):
+def word_count(text) -> int:
     return len(tuple(filter(lambda w: w != "", re.split(" |\n|\t", text))))
     
-def set_rqtw(value):
+def set_rqtw(value: int) -> None:
     """Sets the requests per time window parameter for the AO3 requester"""
     requester.setRQTW(value)
     
-def set_timew(value):
+def set_timew(value: int) -> None:
     """Sets the time window parameter for the AO3 requester"""
     requester.setTimeW(value)
         
-def limit_requests(limit=True):
+def limit_requests(limit: bool = True) -> None:
     """Toggles request limiting"""
     if limit:
         requester.setRQTW(12)
     else:
         requester.setRQTW(-1)
     
-def load_fandoms():
+def load_fandoms() -> None:
     """Loads fandoms into memory
 
     Raises:
@@ -151,7 +183,7 @@ def load_fandoms():
         with open(os.path.join(fandom_path, file), "rb") as f:
             _FANDOMS += pickle.load(f)
             
-def load_languages():
+def load_languages() -> None:
     """Loads languages into memory
 
     Raises:
@@ -169,11 +201,11 @@ def load_languages():
         with open(os.path.join(language_path, file), "rb") as f:
             _LANGUAGES += pickle.load(f)
             
-def get_languages():
+def get_languages() -> list:
     """Returns all available languages"""
     return _LANGUAGES[:]
 
-def search_fandom(fandom_string):
+def search_fandom(fandom_string: str) -> list:
     """Searches for a fandom that matches the given string
 
     Args:
@@ -197,7 +229,7 @@ def search_fandom(fandom_string):
             results.append(fandom)
     return results
         
-def workid_from_url(url):
+def workid_from_url(url: str) -> int:
     """Get the workid from an archiveofourown.org website url
 
     Args:
@@ -245,6 +277,7 @@ def comment(commentable, comment_text, session, fullwork=False, commentid=None, 
         at = commentable.authenticity_token
     else:
         at = session.authenticity_token
+
     headers = {
         "x-requested-with": "XMLHttpRequest",
         "x-newrelic-id": "VQcCWV9RGwIJVFFRAw==",
