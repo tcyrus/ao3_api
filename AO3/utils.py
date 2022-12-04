@@ -1,7 +1,7 @@
-from typing import Optional
 import os
 import pickle
 import re
+from typing import Optional
 
 from bs4 import BeautifulSoup
 
@@ -152,18 +152,18 @@ def word_count(text) -> int:
     
 def set_rqtw(value: int) -> None:
     """Sets the requests per time window parameter for the AO3 requester"""
-    requester.setRQTW(value)
+    requester.rqtw = value
     
 def set_timew(value: int) -> None:
     """Sets the time window parameter for the AO3 requester"""
-    requester.setTimeW(value)
-        
+    requester.timew = value
+
 def limit_requests(limit: bool = True) -> None:
     """Toggles request limiting"""
     if limit:
-        requester.setRQTW(12)
+        requester.rqtw = 12
     else:
-        requester.setRQTW(-1)
+        requester.rqtw = -1
     
 def load_fandoms() -> None:
     """Loads fandoms into memory
@@ -209,7 +209,7 @@ def search_fandom(fandom_string: str) -> list:
     """Searches for a fandom that matches the given string
 
     Args:
-        fandom_string (str): query string
+        fandom_string: query string
 
     Raises:
         UnloadedError: load_fandoms() wasn't called
@@ -229,25 +229,28 @@ def search_fandom(fandom_string: str) -> list:
             results.append(fandom)
     return results
         
-def workid_from_url(url: str) -> int:
+def workid_from_url(url: str) -> Optional[int]:
     """Get the workid from an archiveofourown.org website url
 
     Args:
-        url (str): Work URL 
+        url: Work URL 
 
     Returns:
-        int: Work ID
+        Work ID
     """
     split_url = url.split("/")
+
     try:
         index = split_url.index("works")
     except ValueError:
-        return
+        return None
+
     if len(split_url) >= index+1:
         workid = split_url[index+1].split("?")[0]
         if workid.isdigit():
             return int(workid)
-    return
+
+    return None
 
 def comment(commentable, comment_text, session, fullwork=False, commentid=None, email="", name="", pseud=None):
     """Leaves a comment on a specific work
@@ -339,7 +342,7 @@ def comment(commentable, comment_text, session, fullwork=False, commentid=None, 
 
     raise UnexpectedResponseError(f"Unexpected HTTP status code received ({response.status_code})")
 
-def delete_comment(comment, session):
+def delete_comment(comment, session) -> None:
     """Deletes the specified comment
 
     Args:
@@ -377,7 +380,7 @@ def delete_comment(comment, session):
             if "you don't have permission" in error.lower():
                 raise PermissionError("You don't have permission to do this")
             
-def kudos(work, session):
+def kudos(work, session) -> bool:
     """Leave a 'kudos' in a specific work
 
     Args:
@@ -389,7 +392,7 @@ def kudos(work, session):
         utils.AuthError: Invalid authenticity token
 
     Returns:
-        bool: True if successful, False if you already left kudos there
+        True if successful, False if you already left kudos there
     """
     
     if work.authenticity_token is not None:
@@ -425,7 +428,7 @@ def kudos(work, session):
     else:
         raise UnexpectedResponseError(f"Unexpected HTTP status code received ({response.status_code})")
     
-def subscribe(subscribable, worktype, session, unsubscribe=False, subid=None):
+def subscribe(subscribable, worktype, session, unsubscribe=False, subid=None) -> None:
     """Subscribes to a work. Be careful, you can subscribe to a work multiple times
 
     Args:
@@ -472,7 +475,7 @@ def subscribe(subscribable, worktype, session, unsubscribe=False, subid=None):
     else:
         raise InvalidIdError(f"Invalid ID / worktype")
 
-def bookmark(bookmarkable, session=None, notes="", tags=None, collections=None, private=False, recommend=False, pseud=None):
+def bookmark(bookmarkable, session=None, notes="", tags=None, collections=None, private=False, recommend=False, pseud=None) -> None:
     """Adds a bookmark to a work/series. Be careful, you can bookmark a work multiple times
 
     Args:
@@ -518,7 +521,7 @@ def bookmark(bookmarkable, session=None, notes="", tags=None, collections=None, 
     req = session.session.post(url, data=data, allow_redirects=False)
     handle_bookmark_errors(req)
     
-def delete_bookmark(bookmarkid, session, auth_token=None):
+def delete_bookmark(bookmarkid, session, auth_token=None) -> None:
     """Remove a bookmark from the work/series
 
     Args:
@@ -538,7 +541,7 @@ def delete_bookmark(bookmarkid, session, auth_token=None):
     req = session.session.post(url, data=data, allow_redirects=False)
     handle_bookmark_errors(req)
     
-def handle_bookmark_errors(request):
+def handle_bookmark_errors(request) -> None:
     if request.status_code == 302:
         if request.headers["Location"] == AO3_AUTH_ERROR_URL:
             raise AuthError("Invalid authentication token. Try calling session.refresh_auth_token()")
@@ -583,7 +586,7 @@ def get_pseud_id(ao3object, session=None, specified_pseud=None):
         pseud_id = pseud.attrs["value"]
     return pseud_id
 
-def collect(collectable, session, collections):
+def collect(collectable, session, collections) -> None:
     """Invites a work to a collection. Be careful, you can collect a work multiple times
 
     Args:
